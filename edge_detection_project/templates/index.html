@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Edge Detection Tool</title>
+  <meta name="description" content="Upload any image and compare Sobel, Prewitt, and Canny edge detection algorithms side by side. Adjust thresholds in real time and download results." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+
+<body>
+  <!-- ─────────────────────────────────────────────
+       HEADER
+  ───────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">⬡</span>
+        <span class="logo-text">EdgeVision</span>
+      </div>
+      <nav class="header-nav">
+        <a href="#upload-section" class="nav-link">Upload</a>
+        <a href="#results-section" class="nav-link">Results</a>
+        <a href="#webcam-section" class="nav-link">Live Cam</a>
+        <a href="#theory-section" class="nav-link">Theory</a>
+      </nav>
+      <div class="header-badge">Computer Vision Tool</div>
+    </div>
+  </header>
+
+  <!-- ─────────────────────────────────────────────
+       HERO
+  ───────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-bg-grid"></div>
+    <div class="hero-content">
+      <div class="hero-eyebrow">Smart Image Analysis</div>
+      <h1 class="hero-title">
+        Edge Detection<br />
+        <span class="gradient-text">Visualizer</span>
+      </h1>
+      <p class="hero-subtitle">
+        Compare Sobel, Prewitt &amp; Canny algorithms side-by-side.<br />
+        Adjust parameters in real time and download your results.
+      </p>
+      <div class="hero-tags">
+        <span class="tag tag-blue">Sobel</span>
+        <span class="tag tag-purple">Prewitt</span>
+        <span class="tag tag-cyan">Canny</span>
+        <span class="tag tag-green">Real-time Webcam</span>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="pixel-grid" id="heroPixelGrid"></div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────
+       UPLOAD + CONTROLS
+  ───────────────────────────────────────────── -->
+  <section class="section" id="upload-section">
+    <div class="container">
+      <h2 class="section-title">Upload &amp; Configure</h2>
+      <p class="section-sub">Choose an image and tune the detection parameters below.</p>
+
+      <div class="upload-grid">
+
+        <!-- Drop Zone -->
+        <div class="card drop-zone-card">
+          <div class="drop-zone" id="dropZone">
+            <div class="drop-icon">📁</div>
+            <p class="drop-label">Drag &amp; drop your image here</p>
+            <p class="drop-hint">or click to browse</p>
+            <p class="drop-formats">JPG · PNG · BMP · TIFF · WEBP</p>
+            <input type="file" id="imageInput" accept=".jpg,.jpeg,.png,.bmp,.tiff,.tif,.webp" hidden />
+          </div>
+          <div class="preview-wrapper" id="previewWrapper" style="display:none;">
+            <img id="previewImg" class="preview-img" src="" alt="Preview" />
+            <div class="preview-meta" id="previewMeta"></div>
+            <button class="btn btn-ghost btn-sm" id="clearBtn">✕ Clear</button>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="card controls-card">
+          <h3 class="controls-title">Detection Parameters</h3>
+
+          <div class="control-group">
+            <label class="control-label" for="blurKernel">
+              Gaussian Blur Kernel
+              <span class="control-value" id="blurKernelVal">5</span>
+            </label>
+            <input
+              type="range"
+              id="blurKernel"
+              name="blur_kernel"
+              min="1" max="31" step="2" value="5"
+              class="slider slider-blue"
+            />
+            <p class="control-hint">Larger kernel = more smoothing. Odd numbers only.</p>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label" for="sobelKsize">
+              Sobel Kernel Size
+              <span class="control-value" id="sobelKsizeVal">3</span>
+            </label>
+            <div class="radio-group" id="sobelKsizeGroup">
+              <button class="radio-btn active" data-value="1">1</button>
+              <button class="radio-btn active-default" data-value="3">3</button>
+              <button class="radio-btn" data-value="5">5</button>
+              <button class="radio-btn" data-value="7">7</button>
+            </div>
+            <p class="control-hint">Larger kernel captures coarser edges.</p>
+          </div>
+
+          <div class="divider"></div>
+          <p class="group-label">Canny Thresholds</p>
+
+          <div class="control-group">
+            <label class="control-label" for="cannyLow">
+              Low Threshold
+              <span class="control-value" id="cannyLowVal">50</span>
+            </label>
+            <input
+              type="range"
+              id="cannyLow"
+              name="canny_low"
+              min="0" max="255" step="1" value="50"
+              class="slider slider-purple"
+            />
+          </div>
+
+          <div class="control-group">
+            <label class="control-label" for="cannyHigh">
+              High Threshold
+              <span class="control-value" id="cannyHighVal">150</span>
+            </label>
+            <input
+              type="range"
+              id="cannyHigh"
+              name="canny_high"
+              min="0" max="255" step="1" value="150"
+              class="slider slider-cyan"
+            />
+            <p class="control-hint">Ratio High/Low ≈ 3 : 1 is generally optimal.</p>
+          </div>
+
+          <button class="btn btn-primary" id="processBtn" disabled>
+            <span class="btn-icon">⚡</span> Run Edge Detection
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────
+       LOADING OVERLAY
+  ───────────────────────────────────────────── -->
+  <div class="loading-overlay" id="loadingOverlay" style="display:none;">
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <p class="loading-text">Processing Image…</p>
+      <p class="loading-sub">Running Sobel, Prewitt &amp; Canny pipelines</p>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────
+       RESULTS
+  ───────────────────────────────────────────── -->
+  <section class="section" id="results-section" style="display:none;">
+    <div class="container">
+      <div class="results-header">
+        <h2 class="section-title">Detection Results</h2>
+        <div class="results-meta" id="resultsMeta"></div>
+      </div>
+      <p class="section-sub">Click any image to view it full-size. Use the download button to save individual outputs.</p>
+
+      <!-- Tab bar -->
+      <div class="tabs" id="tabBar">
+        <button class="tab active" data-tab="overview">Overview</button>
+        <button class="tab" data-tab="sobel">Sobel</button>
+        <button class="tab" data-tab="prewitt">Prewitt</button>
+        <button class="tab" data-tab="canny">Canny</button>
+      </div>
+
+      <!-- Overview tab -->
+      <div class="tab-panel active" id="tab-overview">
+        <div class="results-grid overview-grid">
+
+          <div class="result-card" data-key="original_color">
+            <div class="result-badge">Original</div>
+            <img class="result-img" id="img-original_color" src="" alt="Original" />
+            <div class="result-footer">
+              <span class="result-label">Source Image</span>
+              <button class="btn btn-icon-only" data-download="original_color" title="Download">↓</button>
+            </div>
+          </div>
+
+          <div class="result-card" data-key="sobel_combined">
+            <div class="result-badge badge-blue">Sobel</div>
+            <img class="result-img" id="img-sobel_combined" src="" alt="Sobel Combined" />
+            <div class="result-footer">
+              <span class="result-label">Sobel Combined</span>
+              <button class="btn btn-icon-only" data-download="sobel_combined" title="Download">↓</button>
+            </div>
+          </div>
+
+          <div class="result-card" data-key="prewitt_combined">
+            <div class="result-badge badge-purple">Prewitt</div>
+            <img class="result-img" id="img-prewitt_combined" src="" alt="Prewitt Combined" />
+            <div class="result-footer">
+              <span class="result-label">Prewitt Combined</span>
+              <button class="btn btn-icon-only" data-download="prewitt_combined" title="Download">↓</button>
+            </div>
+          </div>
+
+          <div class="result-card" data-key="canny">
+            <div class="result-badge badge-cyan">Canny</div>
+            <img class="result-img" id="img-canny" src="" alt="Canny" />
+            <div class="result-footer">
+              <span class="result-label">Canny Edges</span>
+              <button class="btn btn-icon-only" data-download="canny" title="Download">↓</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Sobel tab -->
+      <div class="tab-panel" id="tab-sobel">
+        <div class="results-grid three-grid">
+          <div class="result-card">
+            <div class="result-badge badge-blue">Sobel X</div>
+            <img class="result-img" id="img-sobel_x" src="" alt="Sobel X" />
+            <div class="result-footer">
+              <span class="result-label">Horizontal Gradient (vertical edges)</span>
+              <button class="btn btn-icon-only" data-download="sobel_x" title="Download">↓</button>
+            </div>
+          </div>
+          <div class="result-card">
+            <div class="result-badge badge-blue">Sobel Y</div>
+            <img class="result-img" id="img-sobel_y" src="" alt="Sobel Y" />
+            <div class="result-footer">
+              <span class="result-label">Vertical Gradient (horizontal edges)</span>
+              <button class="btn btn-icon-only" data-download="sobel_y" title="Download">↓</button>
+            </div>
+          </div>
+          <div class="result-card">
+            <div class="result-badge badge-blue">Sobel Combined</div>
+            <img class="result-img" id="img-sobel_combined_tab" src="" alt="Sobel Combined" />
+            <div class="result-footer">
+              <span class="result-label">√(Gx² + Gy²)</span>
+              <button class="btn btn-icon-only" data-download="sobel_combined" title="Download">↓</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prewitt tab -->
+      <div class="tab-panel" id="tab-prewitt">
+        <div class="results-grid three-grid">
+          <div class="result-card">
+            <div class="result-badge badge-purple">Prewitt X</div>
+            <img class="result-img" id="img-prewitt_x" src="" alt="Prewitt X" />
+            <div class="result-footer">
+              <span class="result-label">Horizontal Gradient</span>
+              <button class="btn btn-icon-only" data-download="prewitt_x" title="Download">↓</button>
+            </div>
+          </div>
+          <div class="result-card">
+            <div class="result-badge badge-purple">Prewitt Y</div>
+            <img class="result-img" id="img-prewitt_y" src="" alt="Prewitt Y" />
+            <div class="result-footer">
+              <span class="result-label">Vertical Gradient</span>
+              <button class="btn btn-icon-only" data-download="prewitt_y" title="Download">↓</button>
+            </div>
+          </div>
+          <div class="result-card">
+            <div class="result-badge badge-purple">Prewitt Combined</div>
+            <img class="result-img" id="img-prewitt_combined_tab" src="" alt="Prewitt Combined" />
+            <div class="result-footer">
+              <span class="result-label">√(Gx² + Gy²)</span>
+              <button class="btn btn-icon-only" data-download="prewitt_combined" title="Download">↓</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canny tab -->
+      <div class="tab-panel" id="tab-canny">
+        <div class="results-grid two-grid">
+          <div class="result-card">
+            <div class="result-badge">Original (Gray)</div>
+            <img class="result-img" id="img-original_gray_canny" src="" alt="Grayscale" />
+            <div class="result-footer">
+              <span class="result-label">Grayscale Input</span>
+              <button class="btn btn-icon-only" data-download="original_gray" title="Download">↓</button>
+            </div>
+          </div>
+          <div class="result-card">
+            <div class="result-badge badge-cyan">Canny Output</div>
+            <img class="result-img" id="img-canny_tab" src="" alt="Canny" />
+            <div class="result-footer">
+              <span class="result-label">Multi-stage Hysteresis</span>
+              <button class="btn btn-icon-only" data-download="canny" title="Download">↓</button>
+            </div>
+          </div>
+        </div>
+        <div class="canny-params-display" id="cannyParamsDisplay"></div>
+      </div>
+
+      <!-- Download All -->
+      <div class="download-all-bar">
+        <button class="btn btn-secondary" id="downloadAllBtn">
+          ⬇ Download All Results (ZIP)
+        </button>
+        <span class="download-note">Saves all 8 processed images as PNG files</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────
+       LIGHTBOX
+  ───────────────────────────────────────────── -->
+  <div class="lightbox" id="lightbox" style="display:none;">
+    <button class="lightbox-close" id="lightboxClose">✕</button>
+    <img class="lightbox-img" id="lightboxImg" src="" alt="Full view" />
+    <p class="lightbox-label" id="lightboxLabel"></p>
+  </div>
+
+  <!-- ─────────────────────────────────────────────
+       WEBCAM SECTION
+  ───────────────────────────────────────────── -->
+  <section class="section" id="webcam-section">
+    <div class="container">
+      <h2 class="section-title">Real-time Webcam Edge Detection</h2>
+      <p class="section-sub">
+        Streams live video from your webcam with Canny edge detection applied in real time.
+        Left = original feed, Right = edge map.
+      </p>
+
+      <div class="webcam-controls">
+        <div class="control-group inline-control">
+          <label class="control-label" for="webcamLow">
+            Low Threshold <span class="control-value" id="webcamLowVal">50</span>
+          </label>
+          <input type="range" id="webcamLow" min="0" max="255" step="1" value="50" class="slider slider-purple" />
+        </div>
+        <div class="control-group inline-control">
+          <label class="control-label" for="webcamHigh">
+            High Threshold <span class="control-value" id="webcamHighVal">150</span>
+          </label>
+          <input type="range" id="webcamHigh" min="0" max="255" step="1" value="150" class="slider slider-cyan" />
+        </div>
+        <button class="btn btn-primary" id="startWebcamBtn">▶ Start Webcam</button>
+        <button class="btn btn-ghost" id="stopWebcamBtn" style="display:none;">⏹ Stop</button>
+      </div>
+
+      <div class="webcam-frame-wrapper" id="webcamWrapper" style="display:none;">
+        <img id="webcamFeed" class="webcam-feed" src="" alt="Webcam live edge detection" />
+        <div class="webcam-label-bar">
+          <span>Original Feed</span>
+          <span>Canny Edge Detection</span>
+        </div>
+      </div>
+
+      <div class="webcam-note">
+        <strong>Note:</strong> Requires a webcam. The stream is processed server-side using OpenCV —
+        no third-party cloud service is used.
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────
+       THEORY SECTION
+  ───────────────────────────────────────────── -->
+  <section class="section section-dark" id="theory-section">
+    <div class="container">
+      <h2 class="section-title">Algorithm Theory</h2>
+      <p class="section-sub">Understanding what each detector does under the hood.</p>
+
+      <div class="theory-grid">
+
+        <div class="theory-card">
+          <div class="theory-icon icon-blue">∂x</div>
+          <h3 class="theory-title">Sobel Operator</h3>
+          <p class="theory-body">
+            Computes image gradients using two 3×3 kernels — one for each axis.
+            Unlike a simple finite-difference approach, Sobel incorporates a small
+            Gaussian smoothing step, making it inherently more noise-resistant.
+          </p>
+          <div class="kernel-display">
+            <div class="kernel">
+              <p class="kernel-label">K<sub>x</sub></p>
+              <pre>-1  0 +1
+-2  0 +2
+-1  0 +1</pre>
+            </div>
+            <div class="kernel">
+              <p class="kernel-label">K<sub>y</sub></p>
+              <pre>-1 -2 -1
+ 0  0  0
++1 +2 +1</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="theory-card">
+          <div class="theory-icon icon-purple">⊕</div>
+          <h3 class="theory-title">Prewitt Operator</h3>
+          <p class="theory-body">
+            Similar to Sobel but uses uniform weighting (no centre emphasis).
+            Simpler to compute but slightly more noise-sensitive. Implemented
+            manually here using <code>cv2.filter2D</code> with custom kernels.
+          </p>
+          <div class="kernel-display">
+            <div class="kernel">
+              <p class="kernel-label">K<sub>x</sub></p>
+              <pre>-1  0 +1
+-1  0 +1
+-1  0 +1</pre>
+            </div>
+            <div class="kernel">
+              <p class="kernel-label">K<sub>y</sub></p>
+              <pre>-1 -1 -1
+ 0  0  0
++1 +1 +1</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="theory-card">
+          <div class="theory-icon icon-cyan">✦</div>
+          <h3 class="theory-title">Canny Algorithm</h3>
+          <p class="theory-body">
+            A multi-stage detector (Canny, 1986) that produces clean, thin edges.
+            Internally: Gaussian smoothing → gradient computation → non-maximum
+            suppression → double thresholding → hysteresis edge tracking.
+          </p>
+          <ol class="theory-steps">
+            <li>Gaussian smoothing</li>
+            <li>Gradient magnitude &amp; direction</li>
+            <li>Non-maximum suppression</li>
+            <li>Double thresholding</li>
+            <li>Hysteresis tracking</li>
+          </ol>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────
+       FOOTER
+  ───────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-logo">⬡ EdgeVision</div>
+      <p class="footer-text">Smart Edge Detection Tool · Built with Python, OpenCV &amp; Flask</p>
+      <p class="footer-stack">
+        <span class="stack-badge">Python 3.11+</span>
+        <span class="stack-badge">OpenCV 4.9</span>
+        <span class="stack-badge">NumPy 1.26</span>
+        <span class="stack-badge">Flask 3.0</span>
+      </p>
+    </div>
+  </footer>
+
+  <!-- Toast notifications -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
